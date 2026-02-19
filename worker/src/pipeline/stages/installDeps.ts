@@ -23,8 +23,11 @@ export async function stageInstallDeps(ctx: PipelineContext): Promise<void> {
     installCmd = "pip install --quiet -r requirements.txt";
   } else if (existsSync(join(wp, "pyproject.toml"))) {
     installCmd = "pip install --quiet .";
-  } else {
+  } else if (existsSync(join(wp, "setup.py"))) {
     installCmd = "pip install --quiet -e .";
+  } else {
+    // Bare Python repo — no packaging config, just install tools
+    installCmd = "echo 'No packaging config — skipping project install'";
   }
 
   // Always ensure test/lint tools are present in the sandbox

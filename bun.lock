@@ -57,6 +57,30 @@
         "typescript": "^5",
       },
     },
+    "packages/fixes": {
+      "name": "@rift/fixes",
+      "version": "0.0.1",
+      "dependencies": {
+        "@rift/docker": "*",
+        "@rift/types": "*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+    },
+    "packages/git": {
+      "name": "@rift/git",
+      "version": "0.1.0",
+      "dependencies": {
+        "@rift/types": "*",
+        "simple-git": "^3",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+    },
     "packages/parser": {
       "name": "@rift/parser",
       "version": "0.0.1",
@@ -92,6 +116,17 @@
         "typescript": "^5",
       },
     },
+    "packages/scoring": {
+      "name": "@rift/scoring",
+      "version": "0.1.0",
+      "dependencies": {
+        "@rift/types": "*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+    },
     "packages/types": {
       "name": "@rift/types",
       "version": "0.0.1",
@@ -104,8 +139,11 @@
       "version": "0.1.0",
       "dependencies": {
         "@rift/docker": "*",
+        "@rift/fixes": "*",
+        "@rift/git": "*",
         "@rift/parser": "*",
         "@rift/redis": "*",
+        "@rift/scoring": "*",
         "@rift/types": "*",
         "bullmq": "^5",
         "execa": "^9",
@@ -493,11 +531,17 @@
 
     "@rift/docker": ["@rift/docker@workspace:packages/docker"],
 
+    "@rift/fixes": ["@rift/fixes@workspace:packages/fixes"],
+
+    "@rift/git": ["@rift/git@workspace:packages/git"],
+
     "@rift/parser": ["@rift/parser@workspace:packages/parser"],
 
     "@rift/queue": ["@rift/queue@workspace:packages/queue"],
 
     "@rift/redis": ["@rift/redis@workspace:packages/redis"],
+
+    "@rift/scoring": ["@rift/scoring@workspace:packages/scoring"],
 
     "@rift/types": ["@rift/types@workspace:packages/types"],
 

@@ -1,9 +1,10 @@
 /** @format */
 
-import type { PipelineContext } from "../context";
-import { emit } from "../../emit";
+import type { PipelineContext } from "../context.ts";
+import { emit } from "../../emit.ts";
+import { applyDeterministicFixes } from "@rift/fixes";
 
-/** APPLY_DETERMINISTIC_FIXES: Runs formatter, linter, import, syntax fixes. [Phase 6] */
+/** APPLY_DETERMINISTIC_FIXES: Runs formatter → linter → imports → syntax fix hierarchy. */
 export async function stageApplyFixes(ctx: PipelineContext): Promise<void> {
   await emit(
     ctx.redis,
@@ -12,12 +13,23 @@ export async function stageApplyFixes(ctx: PipelineContext): Promise<void> {
     "STARTED",
     `Applying fixes for ${ctx.failures.length} failure(s)`,
   );
-  // TODO Phase 6: @rift/fixes
+
+  const newRecords = await applyDeterministicFixes(
+    ctx.failures,
+    ctx.workspacePath,
+  );
+
+  ctx.fixes.push(...newRecords);
+
+  const fixed = newRecords.filter((r) => r.status === "fixed").length;
+  const failed = newRecords.filter((r) => r.status === "failed").length;
+
   await emit(
     ctx.redis,
     ctx.runId,
     "APPLY_DETERMINISTIC_FIXES",
     "COMPLETED",
-    "Fixes applied (stub)",
+    `Applied ${fixed} fix(es), ${failed} failed`,
+    { records: newRecords },
   );
 }

@@ -1,10 +1,10 @@
 /** @format */
 
-import simpleGit from "simple-git";
+import { runInDocker } from "@rift/docker";
 import type { PipelineContext } from "../context";
 import { emit } from "../../emit";
 
-/** CLONE_REPO: Clones the repository into the workspace using simple-git. */
+/** CLONE_REPO: Clones the repository into the Docker container's /workspace mount. */
 export async function stageClone(ctx: PipelineContext): Promise<void> {
   await emit(
     ctx.redis,
@@ -14,22 +14,20 @@ export async function stageClone(ctx: PipelineContext): Promise<void> {
     `Cloning ${ctx.input.repoUrl}`,
   );
 
-  try {
-    const git = simpleGit();
-    await git.clone(ctx.input.repoUrl, ctx.workspacePath, [
-      "--depth",
-      "1", // shallow clone — faster, we only need the latest state
-    ]);
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    await emit(
-      ctx.redis,
-      ctx.runId,
-      "CLONE_REPO",
-      "FAILED",
-      `Clone failed: ${message}`,
-    );
-    throw err;
+  // Run git clone inside Docker — the workspace bind-mount means the cloned
+  // files land on the host too, but the clone itself never touches the host's git.
+  const result = await runInDocker({
+    workspacePath: ctx.workspacePath,
+    image: "alpine/git",
+    entrypoint: "sh",
+    command: `git clone --depth 1 ${ctx.input.repoUrl} .`,
+    timeoutMs: 3 * 60 * 1000,
+  });
+
+  if (result.exitCode !== 0) {
+    const message = result.stderr || result.stdout || "git clone failed";
+    await emit(ctx.redis, ctx.runId, "CLONE_REPO", "FAILED", message);
+    throw new Error(message);
   }
 
   await emit(
@@ -37,6 +35,6 @@ export async function stageClone(ctx: PipelineContext): Promise<void> {
     ctx.runId,
     "CLONE_REPO",
     "COMPLETED",
-    `Repository cloned to ${ctx.workspacePath}`,
+    `Repository cloned into container workspace`,
   );
 }

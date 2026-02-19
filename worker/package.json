@@ -10,8 +10,11 @@
   },
   "dependencies": {
     "@rift/docker": "*",
+    "@rift/fixes": "*",
+    "@rift/git": "*",
     "@rift/parser": "*",
     "@rift/redis": "*",
+    "@rift/scoring": "*",
     "@rift/types": "*",
     "bullmq": "^5",
     "execa": "^9",

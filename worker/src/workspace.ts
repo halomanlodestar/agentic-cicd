@@ -3,10 +3,11 @@
 import { mkdir, rm } from "fs/promises";
 import { join } from "path";
 import { existsSync } from "fs";
+import { tmpdir } from "os";
 
 // ─── Base runs directory ──────────────────────────────────────────────────────
-
-const RUNS_BASE = process.env.RUNS_DIR ?? "/tmp/rift-runs";
+// Falls back to os.tmpdir() so it works on both Windows and Linux/macOS.
+const RUNS_BASE = process.env.RUNS_DIR ?? join(tmpdir(), "rift-runs");
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 

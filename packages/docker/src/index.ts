@@ -11,6 +11,8 @@ export interface DockerRunOpts {
   command: string;
   /** Docker image to use (defaults to python:3.11-slim) */
   image?: string;
+  /** Override the image entrypoint (e.g. "sh" for images like alpine/git) */
+  entrypoint?: string;
   /** Extra environment variables to inject */
   env?: Record<string, string>;
   /** Timeout in milliseconds (defaults to 5 minutes) */
@@ -38,11 +40,13 @@ export async function runInDocker(
     workspacePath,
     command,
     image = "python:3.11-slim",
+    entrypoint,
     env = {},
     timeoutMs = 5 * 60 * 1000,
   } = opts;
 
   const envArgs = Object.entries(env).flatMap(([k, v]) => ["-e", `${k}=${v}`]);
+  const entrypointArgs = entrypoint ? ["--entrypoint", entrypoint] : [];
 
   try {
     const result = await execa(
@@ -61,8 +65,11 @@ export async function runInDocker(
         "-w",
         "/workspace",
         ...envArgs,
+        ...entrypointArgs,
         image,
-        "sh",
+        // When --entrypoint is overridden the entrypoint IS the shell,
+        // so just pass "-c" + command. Otherwise prepend "sh".
+        ...(entrypoint ? [] : ["sh"]),
         "-c",
         command,
       ],

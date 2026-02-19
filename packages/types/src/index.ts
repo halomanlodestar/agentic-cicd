@@ -57,6 +57,7 @@ export interface FixRecord {
   bugType: BugType;
   line: number;
   commitMessage: string;
+  strategy: "formatter" | "linter" | "imports" | "syntax" | "ai";
   status: "fixed" | "failed";
 }
 
@@ -95,6 +96,7 @@ export interface RunResult {
   totalFailuresDetected: number;
   totalFixesApplied: number;
   fixes: FixRecord[];
+  failureDetails: Failure[];
   iterations: CiIteration[];
   score: ScoreBreakdown;
   startedAt: string;
