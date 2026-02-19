@@ -3,7 +3,7 @@
 import { existsSync } from "fs";
 import { join } from "path";
 
-const TOOLS = "pytest flake8 black autopep8";
+const TOOLS = "pytest flake8 black autopep8 autoflake";
 
 /**
  * Returns a shell command that installs project deps + test tools into the

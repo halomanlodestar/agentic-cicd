@@ -17,7 +17,10 @@ function codeToBugType(code: string, message: string): BugType {
   const n = parseInt(code.slice(1), 10);
 
   // F401 = imported but unused, F811 = redefined unused import
-  if (code === "F401" || code === "F811") return "LINTING";
+  if (code === "F401" || code === "F811") return "IMPORT";
+
+  // F841 = local variable assigned but never used — remove dead assignment
+  if (code === "F841") return "IMPORT";
 
   // E1xx / W1xx = indentation
   if (prefix === "E1" || prefix === "W1") return "INDENTATION";
@@ -39,6 +42,9 @@ function codeToBugType(code: string, message: string): BugType {
 
   // E9xx = runtime/syntax errors
   if (prefix === "E9") return "SYNTAX";
+
+  // W292 = no newline at end of file
+  if (code === "W292") return "LINTING";
 
   // W6xx = deprecated features
   if (prefix === "W6") return "SYNTAX";

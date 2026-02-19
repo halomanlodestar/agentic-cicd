@@ -32,14 +32,15 @@ export async function runImportFix(
   const fixedFiles = new Set<string>();
 
   for (const failure of importFailures) {
-    // Only handle "remove unused import" deterministically
-    if (
-      !failure.message.toLowerCase().includes("imported but unused") &&
-      !failure.message.toLowerCase().includes("unused import") &&
-      !failure.message.toLowerCase().includes("f401")
-    ) {
-      continue;
-    }
+    const msg = failure.message.toLowerCase();
+    const isUnusedImport =
+      msg.includes("imported but unused") ||
+      msg.includes("unused import") ||
+      msg.includes("f401");
+    const isDeadAssignment =
+      msg.includes("assigned to but never used") || msg.includes("f841");
+
+    if (!isUnusedImport && !isDeadAssignment) continue;
 
     const filePath = join(workspacePath, failure.file);
     try {
@@ -47,11 +48,29 @@ export async function runImportFix(
       const lines = content.split("\n");
       const targetLine = failure.line - 1; // 0-indexed
 
-      if (targetLine >= 0 && targetLine < lines.length) {
-        const line = lines[targetLine];
+      if (targetLine < 0 || targetLine >= lines.length) continue;
+      const line = lines[targetLine];
+
+      if (isUnusedImport) {
         // Only remove if this line is actually an import statement
         if (/^\s*(import|from)\s+/.test(line)) {
           lines.splice(targetLine, 1);
+          await writeFile(filePath, lines.join("\n"), "utf8");
+          fixedFiles.add(failure.file);
+        }
+      } else if (isDeadAssignment) {
+        // var = expr  →  strip the "var =" part if RHS is a call (keep side effects)
+        //             →  remove the line entirely if RHS is a literal
+        const assignMatch = /^(\s*)\w+\s*=\s*(.+)$/.exec(line);
+        if (assignMatch) {
+          const [, indent, rhs] = assignMatch;
+          if (/\(/.test(rhs)) {
+            // RHS has a call — keep it as a standalone expression
+            lines[targetLine] = `${indent}${rhs.trimEnd()}`;
+          } else {
+            // Pure literal/name — remove the whole line
+            lines.splice(targetLine, 1);
+          }
           await writeFile(filePath, lines.join("\n"), "utf8");
           fixedFiles.add(failure.file);
         }
