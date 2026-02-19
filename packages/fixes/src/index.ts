@@ -1,15 +1,16 @@
 /** @format */
 
 import type { Failure, FixRecord } from "@rift/types";
-import { runFormatter } from "./formatter";
-import { runLinterFix } from "./linter";
-import { runImportFix } from "./imports";
-import { runSyntaxFix } from "./syntax";
+import type { DockerSession } from "@rift/docker";
+import { runFormatter } from "./formatter.ts";
+import { runLinterFix } from "./linter.ts";
+import { runImportFix } from "./imports.ts";
+import { runSyntaxFix } from "./syntax.ts";
 
-export { runFormatter } from "./formatter";
-export { runLinterFix } from "./linter";
-export { runImportFix } from "./imports";
-export { runSyntaxFix } from "./syntax";
+export { runFormatter } from "./formatter.ts";
+export { runLinterFix } from "./linter.ts";
+export { runImportFix } from "./imports.ts";
+export { runSyntaxFix } from "./syntax.ts";
 
 /**
  * Runs the full deterministic fix hierarchy in priority order:
@@ -20,12 +21,13 @@ export { runSyntaxFix } from "./syntax";
 export async function applyDeterministicFixes(
   failures: Failure[],
   workspacePath: string,
+  session: DockerSession,
 ): Promise<FixRecord[]> {
   const records: FixRecord[] = [];
 
   // Stage 1: black formatter (touches all Python files)
   try {
-    const res = await runFormatter(workspacePath);
+    const res = await runFormatter(session);
     if (res.reformattedFiles.length > 0) {
       for (const file of res.reformattedFiles) {
         records.push({
@@ -55,7 +57,7 @@ export async function applyDeterministicFixes(
   );
   if (lintFailures.length > 0) {
     try {
-      const res = await runLinterFix(workspacePath, lintFailures);
+      const res = await runLinterFix(session, lintFailures);
       if (res.fixedCount > 0) {
         records.push({
           bugType: "LINTING",

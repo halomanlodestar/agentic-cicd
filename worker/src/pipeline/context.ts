@@ -2,6 +2,7 @@
 
 import type IORedis from "ioredis";
 import type { RunInput, Failure, FixRecord, CiIteration } from "@rift/types";
+import type { DockerSession } from "@rift/docker";
 
 // ─── Context passed through every pipeline stage ─────────────────────────────
 
@@ -29,6 +30,8 @@ export interface PipelineContext {
   commitCount: number;
   /** Git branch name created for this run */
   branchName: string | null;
+  /** Long-lived Docker container for the run (started in installDeps, stopped in finally) */
+  container: DockerSession | null;
 
   // ── Timing ───────────────────────────────────────────────────────────────
 
@@ -51,6 +54,7 @@ export function createContext(
     iterations: [],
     commitCount: 0,
     branchName: null,
+    container: null,
     startedAt: new Date().toISOString(),
   };
 }

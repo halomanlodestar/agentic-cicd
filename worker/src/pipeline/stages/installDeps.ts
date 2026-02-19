@@ -1,43 +1,32 @@
 /** @format */
 
-import { existsSync } from "fs";
-import { join } from "path";
-import { runInDocker } from "@rift/docker";
+import { DockerSession } from "@rift/docker";
 import type { PipelineContext } from "../context";
 import { emit } from "../../emit";
+import { buildPipInstallCmd } from "../pythonEnv.ts";
 
-/** INSTALL_DEPS: Installs Python dependencies inside a Docker sandbox. */
+/**
+ * INSTALL_DEPS: Starts the long-lived pipeline container and installs deps.
+ * The container persists for all subsequent stages (runTests, applyFixes, etc.).
+ */
 export async function stageInstallDeps(ctx: PipelineContext): Promise<void> {
   await emit(
     ctx.redis,
     ctx.runId,
     "INSTALL_DEPS",
     "STARTED",
-    "Installing dependencies",
+    "Starting container and installing dependencies",
   );
 
-  const wp = ctx.workspacePath;
-  let installCmd: string;
+  // Start the persistent container — all subsequent stages exec into this
+  ctx.container = new DockerSession(ctx.runId, ctx.workspacePath);
+  await ctx.container.start();
 
-  if (existsSync(join(wp, "requirements.txt"))) {
-    installCmd = "pip install --quiet -r requirements.txt";
-  } else if (existsSync(join(wp, "pyproject.toml"))) {
-    installCmd = "pip install --quiet .";
-  } else if (existsSync(join(wp, "setup.py"))) {
-    installCmd = "pip install --quiet -e .";
-  } else {
-    // Bare Python repo — no packaging config, just install tools
-    installCmd = "echo 'No packaging config — skipping project install'";
-  }
-
-  // Always ensure test/lint tools are present in the sandbox
-  installCmd += " && pip install --quiet pytest flake8 black autopep8";
-
-  const result = await runInDocker({
-    workspacePath: wp,
-    command: installCmd,
-    timeoutMs: 3 * 60 * 1000,
-  });
+  const installCmd = buildPipInstallCmd(ctx.workspacePath);
+  const result = await ctx.container.exec(
+    installCmd,
+    `install:${ctx.runId.slice(0, 8)}`,
+  );
 
   if (result.exitCode !== 0) {
     const detail = (result.stderr || result.stdout).slice(0, 500);

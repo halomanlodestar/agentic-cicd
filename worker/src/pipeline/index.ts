@@ -122,6 +122,8 @@ export async function runPipeline(job: Job<JobData>): Promise<void> {
     }
     throw err; // re-throw so BullMQ marks the job as failed
   } finally {
+    // Always stop the container — even if a stage threw
+    await ctx.container?.stop();
     redis.disconnect();
   }
 }

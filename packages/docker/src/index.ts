@@ -17,6 +17,8 @@ export interface DockerRunOpts {
   env?: Record<string, string>;
   /** Timeout in milliseconds (defaults to 5 minutes) */
   timeoutMs?: number;
+  /** If set, stream each output line to the worker terminal prefixed with this label */
+  verbose?: string;
 }
 
 export interface DockerRunResult {
@@ -43,19 +45,20 @@ export async function runInDocker(
     entrypoint,
     env = {},
     timeoutMs = 5 * 60 * 1000,
+    verbose,
   } = opts;
 
   const envArgs = Object.entries(env).flatMap(([k, v]) => ["-e", `${k}=${v}`]);
   const entrypointArgs = entrypoint ? ["--entrypoint", entrypoint] : [];
 
   try {
-    const result = await execa(
+    const subprocess = execa(
       "docker",
       [
         "run",
         "--rm",
         "--network",
-        "host", // allow pip install; isolate at the VM level
+        "host",
         "--memory",
         "512m",
         "--cpus",
@@ -67,8 +70,6 @@ export async function runInDocker(
         ...envArgs,
         ...entrypointArgs,
         image,
-        // When --entrypoint is overridden the entrypoint IS the shell,
-        // so just pass "-c" + command. Otherwise prepend "sh".
         ...(entrypoint ? [] : ["sh"]),
         "-c",
         command,
@@ -76,13 +77,34 @@ export async function runInDocker(
       { timeout: timeoutMs, reject: false },
     );
 
+    // Stream output to the worker terminal if verbose label is set
+    let stdoutBuf = "";
+    let stderrBuf = "";
+
+    subprocess.stdout?.on("data", (chunk: Buffer) => {
+      const text = chunk.toString();
+      stdoutBuf += text;
+      if (verbose)
+        process.stdout.write(text.replace(/^/gm, `[docker:${verbose}] `));
+    });
+
+    subprocess.stderr?.on("data", (chunk: Buffer) => {
+      const text = chunk.toString();
+      stderrBuf += text;
+      if (verbose)
+        process.stderr.write(text.replace(/^/gm, `[docker:${verbose}] `));
+    });
+
+    const result = await subprocess;
+
     return {
-      stdout: typeof result.stdout === "string" ? result.stdout : "",
-      stderr: typeof result.stderr === "string" ? result.stderr : "",
+      stdout:
+        stdoutBuf || (typeof result.stdout === "string" ? result.stdout : ""),
+      stderr:
+        stderrBuf || (typeof result.stderr === "string" ? result.stderr : ""),
       exitCode: result.exitCode ?? 0,
     };
   } catch (err: unknown) {
-    // execa throws on ETIMEDOUT / spawn errors even with reject: false
     const e = err as {
       stdout?: string;
       stderr?: string;
@@ -94,5 +116,92 @@ export async function runInDocker(
       stderr: e.stderr ?? e.message ?? String(err),
       exitCode: e.exitCode ?? 1,
     };
+  }
+}
+
+// ─── Persistent session ───────────────────────────────────────────────────────
+
+/**
+ * A long-lived Docker container that persists across multiple exec() calls.
+ * Use this instead of runInDocker() when multiple commands need shared state
+ * (installed packages, environment variables, etc.).
+ */
+export class DockerSession {
+  private readonly name: string;
+  private readonly workspacePath: string;
+  private readonly image: string;
+  private running = false;
+
+  constructor(name: string, workspacePath: string, image = "python:3.11-slim") {
+    this.name = name;
+    this.workspacePath = workspacePath;
+    this.image = image;
+  }
+
+  /** Start the container in detached mode, keeping it alive with `sleep infinity`. */
+  async start(): Promise<void> {
+    await execa("docker", [
+      "run",
+      "-d",
+      "--name",
+      this.name,
+      "--network",
+      "host",
+      "--memory",
+      "512m",
+      "--cpus",
+      "1",
+      "-v",
+      `${this.workspacePath}:/workspace:rw`,
+      "-w",
+      "/workspace",
+      this.image,
+      "sleep",
+      "infinity",
+    ]);
+    this.running = true;
+  }
+
+  /** Execute a shell command inside the running container with optional live streaming. */
+  async exec(command: string, verbose?: string): Promise<DockerRunResult> {
+    const subprocess = execa(
+      "docker",
+      ["exec", this.name, "sh", "-c", command],
+      { reject: false },
+    );
+
+    let stdoutBuf = "";
+    let stderrBuf = "";
+
+    subprocess.stdout?.on("data", (chunk: Buffer) => {
+      const text = chunk.toString();
+      stdoutBuf += text;
+      if (verbose)
+        process.stdout.write(text.replace(/^/gm, `[docker:${verbose}] `));
+    });
+
+    subprocess.stderr?.on("data", (chunk: Buffer) => {
+      const text = chunk.toString();
+      stderrBuf += text;
+      if (verbose)
+        process.stderr.write(text.replace(/^/gm, `[docker:${verbose}] `));
+    });
+
+    const result = await subprocess;
+    return {
+      stdout:
+        stdoutBuf || (typeof result.stdout === "string" ? result.stdout : ""),
+      stderr:
+        stderrBuf || (typeof result.stderr === "string" ? result.stderr : ""),
+      exitCode: result.exitCode ?? 0,
+    };
+  }
+
+  /** Stop and remove the container. Safe to call multiple times. */
+  async stop(): Promise<void> {
+    if (this.running) {
+      await execa("docker", ["rm", "-f", this.name], { reject: false });
+      this.running = false;
+    }
   }
 }

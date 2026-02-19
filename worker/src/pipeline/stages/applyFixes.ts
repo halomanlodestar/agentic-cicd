@@ -17,6 +17,7 @@ export async function stageApplyFixes(ctx: PipelineContext): Promise<void> {
   const newRecords = await applyDeterministicFixes(
     ctx.failures,
     ctx.workspacePath,
+    ctx.container!,
   );
 
   ctx.fixes.push(...newRecords);

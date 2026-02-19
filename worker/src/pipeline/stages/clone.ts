@@ -22,6 +22,7 @@ export async function stageClone(ctx: PipelineContext): Promise<void> {
     entrypoint: "sh",
     command: `git clone --depth 1 ${ctx.input.repoUrl} .`,
     timeoutMs: 3 * 60 * 1000,
+    verbose: `clone:${ctx.runId.slice(0, 8)}`,
   });
 
   if (result.exitCode !== 0) {

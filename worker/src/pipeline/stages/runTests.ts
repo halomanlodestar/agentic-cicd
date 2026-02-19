@@ -1,6 +1,5 @@
 /** @format */
 
-import { runInDocker } from "@rift/docker";
 import type { PipelineContext } from "../context";
 import { emit } from "../../emit";
 
@@ -12,6 +11,7 @@ export interface TestRunResult {
 
 /**
  * RUN_TESTS: Runs pytest and flake8 inside Docker.
+ * Each container is ephemeral (--rm), so we reinstall tools on every run.
  * Both tools run independently — we collect both outputs regardless of exit codes.
  * passed = true only when BOTH exit with 0.
  */
@@ -26,18 +26,18 @@ export async function stageRunTests(
     "Running tests and linter",
   );
 
-  // Run pytest and flake8 sequentially so their outputs stay separate
-  const pytestResult = await runInDocker({
-    workspacePath: ctx.workspacePath,
-    // --tb=short: concise tracebacks; -q: less noise; --no-header: cleaner output
-    command: "python -m pytest --tb=short -q --no-header 2>&1 || true",
-  });
+  // Use the persistent container started in installDeps — no reinstall needed
+  const container = ctx.container!;
 
-  const flake8Result = await runInDocker({
-    workspacePath: ctx.workspacePath,
-    // Default flake8 format: <file>:<line>:<col>: <code> <message>
-    command: "python -m flake8 --format=default . 2>&1 || true",
-  });
+  const pytestResult = await container.exec(
+    "python -m pytest --tb=short -q --no-header 2>&1",
+    `pytest:${ctx.runId.slice(0, 8)}`,
+  );
+
+  const flake8Result = await container.exec(
+    "python -m flake8 --format=default .",
+    `flake8:${ctx.runId.slice(0, 8)}`,
+  );
 
   const rawPytest = pytestResult.stdout + pytestResult.stderr;
   const rawFlake8 = flake8Result.stdout + flake8Result.stderr;

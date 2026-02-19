@@ -1,6 +1,6 @@
 /** @format */
 
-import { runInDocker } from "@rift/docker";
+import type { DockerSession } from "@rift/docker";
 
 export interface FormatterResult {
   reformattedFiles: string[];
@@ -8,16 +8,12 @@ export interface FormatterResult {
 }
 
 /**
- * Runs `black .` inside Docker to auto-format all Python files.
- * black always exits 0 on success (even if it reformats), non-zero on error.
+ * Runs `black .` inside the pipeline container to auto-format all Python files.
  */
 export async function runFormatter(
-  workspacePath: string,
+  session: DockerSession,
 ): Promise<FormatterResult> {
-  const result = await runInDocker({
-    workspacePath,
-    command: "black . 2>&1",
-  });
+  const result = await session.exec("black . 2>&1");
 
   // Parse which files black reformatted: "reformatted path/to/file.py"
   const reformattedFiles: string[] = [];

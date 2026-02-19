@@ -1,6 +1,6 @@
 /** @format */
 
-import { runInDocker } from "@rift/docker";
+import type { DockerSession } from "@rift/docker";
 import type { Failure } from "@rift/types";
 
 export interface LinterResult {
@@ -9,12 +9,11 @@ export interface LinterResult {
 }
 
 /**
- * Runs autopep8 --in-place to fix whitespace/indentation issues.
+ * Runs autopep8 --in-place inside the pipeline container.
  * Targets INDENTATION and LINTING failures specifically.
- * Falls back gracefully — a non-zero exit just means nothing changed.
  */
 export async function runLinterFix(
-  workspacePath: string,
+  session: DockerSession,
   failures: Failure[],
 ): Promise<LinterResult> {
   const targetTypes = new Set(["LINTING", "INDENTATION"]);
@@ -28,12 +27,10 @@ export async function runLinterFix(
     return { fixedCount: 0, stdout: "" };
   }
 
-  // autopep8 --aggressive --aggressive handles most E1xx/E2xx/W codes
   const fileArgs = targetFiles.map((f) => `"${f}"`).join(" ");
-  const result = await runInDocker({
-    workspacePath,
-    command: `autopep8 --in-place --aggressive --aggressive ${fileArgs} 2>&1`,
-  });
+  const result = await session.exec(
+    `autopep8 --in-place --aggressive --aggressive ${fileArgs} 2>&1`,
+  );
 
   return {
     fixedCount: result.exitCode === 0 ? targetFiles.length : 0,
