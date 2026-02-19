@@ -12,6 +12,7 @@
     "@rift/docker": "*",
     "@rift/fixes": "*",
     "@rift/git": "*",
+    "@rift/llm": "*",
     "@rift/parser": "*",
     "@rift/redis": "*",
     "@rift/scoring": "*",

@@ -81,6 +81,18 @@
         "typescript": "^5",
       },
     },
+    "packages/llm": {
+      "name": "@rift/llm",
+      "version": "0.0.1",
+      "dependencies": {
+        "@google/generative-ai": "^0.24.1",
+        "@rift/types": "*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+    },
     "packages/parser": {
       "name": "@rift/parser",
       "version": "0.0.1",
@@ -141,6 +153,7 @@
         "@rift/docker": "*",
         "@rift/fixes": "*",
         "@rift/git": "*",
+        "@rift/llm": "*",
         "@rift/parser": "*",
         "@rift/redis": "*",
         "@rift/scoring": "*",
@@ -262,6 +275,8 @@
     "@floating-ui/react-dom": ["@floating-ui/react-dom@2.1.7", "", { "dependencies": { "@floating-ui/dom": "^1.7.5" }, "peerDependencies": { "react": ">=16.8.0", "react-dom": ">=16.8.0" } }, "sha512-0tLRojf/1Go2JgEVm+3Frg9A3IW8bJgKgdO0BN5RkF//ufuz2joZM63Npau2ff3J6lUVYgDSNzNkR+aH3IVfjg=="],
 
     "@floating-ui/utils": ["@floating-ui/utils@0.2.10", "", {}, "sha512-aGTxbpbg8/b5JfU1HXSrbH3wXZuLPJcNEcZQFMxLs3oSzgtVu6nFPkbbGGUvBcUjKV2YyB9Wxxabo+HEH9tcRQ=="],
+
+    "@google/generative-ai": ["@google/generative-ai@0.24.1", "", {}, "sha512-MqO+MLfM6kjxcKoy0p1wRzG3b4ZZXtPI+z2IE26UogS2Cm/XHO+7gGRBh6gcJsOiIVoH93UwKvW4HdgiOZCy9Q=="],
 
     "@hono/node-server": ["@hono/node-server@1.19.9", "", { "peerDependencies": { "hono": "^4" } }, "sha512-vHL6w3ecZsky+8P5MD+eFfaGTyCeOHUIFYMGpQGbrBTSmNNoxv0if69rEZ5giu36weC5saFuznL411gRX7bJDw=="],
 
@@ -534,6 +549,8 @@
     "@rift/fixes": ["@rift/fixes@workspace:packages/fixes"],
 
     "@rift/git": ["@rift/git@workspace:packages/git"],
+
+    "@rift/llm": ["@rift/llm@workspace:packages/llm"],
 
     "@rift/parser": ["@rift/parser@workspace:packages/parser"],
 

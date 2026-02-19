@@ -12,6 +12,7 @@ import { stageInstallDeps } from "./stages/installDeps";
 import { stageRunTests } from "./stages/runTests";
 import { stageParseFailures } from "./stages/parseFailures";
 import { stageApplyFixes } from "./stages/applyFixes";
+import { stageApplyAiFix } from "./stages/applyAiFix";
 import { stageCommit } from "./stages/commit";
 import { stageFinish } from "./stages/finish";
 
@@ -71,6 +72,7 @@ export async function runPipeline(job: Job<JobData>): Promise<void> {
     while (!testResult.passed && retryCount < MAX_RETRIES) {
       await stageParseFailures(ctx, testResult);
       await stageApplyFixes(ctx);
+      await stageApplyAiFix(ctx);
       await stageCommit(ctx);
 
       // Retest
