@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@rift/docker": "*",
+    "@rift/parser": "*",
     "@rift/redis": "*",
     "@rift/types": "*",
     "bullmq": "^5",

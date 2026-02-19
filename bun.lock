@@ -57,6 +57,17 @@
         "typescript": "^5",
       },
     },
+    "packages/parser": {
+      "name": "@rift/parser",
+      "version": "0.0.1",
+      "dependencies": {
+        "@rift/types": "*",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+    },
     "packages/queue": {
       "name": "@rift/queue",
       "version": "0.0.1",
@@ -93,6 +104,7 @@
       "version": "0.1.0",
       "dependencies": {
         "@rift/docker": "*",
+        "@rift/parser": "*",
         "@rift/redis": "*",
         "@rift/types": "*",
         "bullmq": "^5",
@@ -480,6 +492,8 @@
     "@radix-ui/rect": ["@radix-ui/rect@1.1.1", "", {}, "sha512-HPwpGIzkl28mWyZqG52jiqDJ12waP11Pa1lGoiyUkIEuMLBP0oeK/C89esbXrxsky5we7dfd8U58nm0SgAWpVw=="],
 
     "@rift/docker": ["@rift/docker@workspace:packages/docker"],
+
+    "@rift/parser": ["@rift/parser@workspace:packages/parser"],
 
     "@rift/queue": ["@rift/queue@workspace:packages/queue"],
 
