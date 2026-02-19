@@ -11,8 +11,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
-    "@rift/types": "*"
+    "@rift/types": "*",
+    "openai": "^6.22.0"
   },
   "devDependencies": {
     "@types/bun": "latest",

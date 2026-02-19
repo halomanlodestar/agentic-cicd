@@ -1,59 +1,42 @@
 /** @format */
 
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
-import type { Schema } from "@google/generative-ai";
+import OpenAI from "openai";
 import { readFile, writeFile } from "fs/promises";
 import { join } from "path";
 import type { Failure, FixRecord } from "@rift/types";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
-const MODEL = "gemini-2.0-flash";
-
-// ─── Gemini response schema ───────────────────────────────────────────────────
-
-const RESPONSE_SCHEMA: Schema = {
-  type: SchemaType.OBJECT,
-  properties: {
-    files: {
-      type: SchemaType.ARRAY,
-      items: {
-        type: SchemaType.OBJECT,
-        properties: {
-          path: { type: SchemaType.STRING },
-          content: { type: SchemaType.STRING },
-        },
-        required: ["path", "content"],
-      },
-    },
-  },
-  required: ["files"],
-};
-
-interface GeminiResponse {
+interface AiResponse {
   files: Array<{ path: string; content: string }>;
 }
 
 // ─── Main export ──────────────────────────────────────────────────────────────
 
 /**
- * Calls Gemini to fix any remaining failures that deterministic tools couldn't
- * handle (LOGIC, TYPE_ERROR, complex LINTING, etc.).
+ * Calls Grok (xAI) to fix any remaining failures that deterministic tools
+ * couldn't handle (LOGIC, TYPE_ERROR, complex LINTING, etc.).
  *
- * Reads file contents from the host workspace (bind-mounted into the Docker
- * container), sends everything in a single API call, writes fixed files back.
- * The running DockerSession will see the changes immediately via the bind mount.
+ * Grok exposes an OpenAI-compatible API — we reuse the `openai` SDK with a
+ * custom baseURL. JSON mode guarantees a parseable response.
  *
- * Returns an empty array (no-op) if GEMINI_API_KEY is unset or no failures remain.
+ * Reads file contents from the host workspace (bind-mounted into Docker),
+ * sends everything in one API call, writes fixed files back.
+ * Returns an empty array (no-op) if XAI_API_KEY is unset or no failures remain.
  */
 export async function applyAiFix(
   failures: Failure[],
   workspacePath: string,
 ): Promise<FixRecord[]> {
-  const apiKey = process.env.GEMINI_API_KEY;
+  const apiKey = process.env.XAI_API_KEY;
   if (!apiKey || failures.length === 0) return [];
 
-  // ── Group failures by file ──────────────────────────────────────────────
+  const client = new OpenAI({
+    apiKey,
+    baseURL: "https://api.groq.com/openai/v1",
+  });
+
+  // ── Group failures by file ────────────────────────────────────────────────
   const byFile = new Map<string, Failure[]>();
   for (const f of failures) {
     const existing = byFile.get(f.file) ?? [];
@@ -61,7 +44,7 @@ export async function applyAiFix(
     byFile.set(f.file, existing);
   }
 
-  // ── Read current file contents (post-deterministic-fix) ────────────────
+  // ── Read current file contents (post-deterministic-fix) ──────────────────
   const fileContexts: string[] = [];
   const readableFiles = new Set<string>();
 
@@ -86,8 +69,8 @@ export async function applyAiFix(
 
   if (fileContexts.length === 0) return [];
 
-  // ── Build prompt ────────────────────────────────────────────────────────
-  const prompt = [
+  // ── Build prompt ──────────────────────────────────────────────────────────
+  const userPrompt = [
     "You are an expert Python developer. Fix ALL listed issues in each file.",
     "Rules:",
     "- Return complete, valid Python files (no truncation, no ellipsis).",
@@ -95,33 +78,37 @@ export async function applyAiFix(
     "- Preserve all existing logic and behaviour — only fix the listed issues.",
     "- If a variable is assigned but never used, either use it or delete the assignment.",
     "- If an import is unused, remove it.",
-    "- You MUST add a comment like '# [AI FIX] Explaination' on each line you change, so we can track what you fixed.",
+    "- Add a short inline comment '# [AI FIX]' on each line you change.",
     "",
     ...fileContexts,
     "",
-    'Return a JSON object with a "files" array. Each entry: { "path": "<original path>", "content": "<complete fixed Python source>" }',
+    'Return ONLY a JSON object: { "files": [ { "path": "<original path>", "content": "<complete fixed Python source>" } ] }',
   ].join("\n");
 
-  // ── Call Gemini ─────────────────────────────────────────────────────────
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({
-    model: MODEL,
-    generationConfig: {
-      responseMimeType: "application/json",
-      responseSchema: RESPONSE_SCHEMA,
-    },
-  });
-
-  let response: GeminiResponse;
+  // ── Call Grok ─────────────────────────────────────────────────────────────
+  let response: AiResponse;
   try {
-    const result = await model.generateContent(prompt);
-    response = JSON.parse(result.response.text()) as GeminiResponse;
+    const completion = await client.chat.completions.create({
+      model: "openai/gpt-oss-120b",
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a Python code repair agent. Always respond with valid JSON only.",
+        },
+        { role: "user", content: userPrompt },
+      ],
+    });
+
+    const raw = completion.choices[0]?.message?.content ?? "{}";
+    response = JSON.parse(raw) as AiResponse;
   } catch (err) {
-    console.warn("[llm] Gemini call failed:", err);
-    return []; // non-fatal — pipeline continues with what deterministic fixes did
+    console.warn("[llm] Grok call failed:", err);
+    return []; // non-fatal — pipeline continues with deterministic-only fixes
   }
 
-  // ── Write fixed files back to host workspace ────────────────────────────
+  // ── Write fixed files back to host workspace ──────────────────────────────
   const records: FixRecord[] = [];
 
   for (const { path: filePath, content } of response.files ?? []) {
@@ -143,7 +130,9 @@ export async function applyAiFix(
         });
       }
 
-      console.log(`[llm] Fixed ${filePath} (${fileFails.length} issue(s))`);
+      console.log(
+        `[llm] Grok fixed ${filePath} (${byFile.get(filePath)?.length ?? 0} issue(s))`,
+      );
     } catch {
       // write failed — skip silently
     }

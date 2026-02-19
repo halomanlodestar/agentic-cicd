@@ -5,11 +5,11 @@ import { emit } from "../../emit.ts";
 import { applyAiFix } from "@rift/llm";
 
 /**
- * APPLY_AI_FIX: Calls Gemini to fix any failures that deterministic tools
- * couldn't resolve. No-ops silently if GEMINI_API_KEY is unset.
+ * APPLY_AI_FIX: Calls Grok (xAI) to fix any failures that deterministic tools
+ * couldn't resolve. No-ops silently if XAI_API_KEY is unset.
  */
 export async function stageApplyAiFix(ctx: PipelineContext): Promise<void> {
-  if (!process.env.GEMINI_API_KEY) return; // skip cleanly when key not configured
+  if (!process.env.XAI_API_KEY) return; // skip cleanly when key not configured
   if (ctx.failures.length === 0) return;
 
   await emit(
