@@ -4,10 +4,13 @@
   "private": true,
   "workspaces": [
     "frontend",
-    "backend"
+    "worker",
+    "packages/**"
   ],
   "scripts": {
-    "web": "bun --cwd frontend dev"
+    "web": "bun --cwd frontend dev",
+    "worker": "bun --cwd worker src/index.ts",
+    "typecheck": "bun run --filter '*' typecheck"
   },
   "devDependencies": {
     "@types/bun": "latest"
