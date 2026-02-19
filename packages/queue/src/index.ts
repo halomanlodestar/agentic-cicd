@@ -33,8 +33,8 @@ export async function enqueueRun(input: RunInput): Promise<string> {
     { ...input, runId },
     {
       jobId: runId,
-      attempts: 1, // pipeline handles its own retries internally
-      removeOnComplete: { age: 60 * 60 * 24 }, // keep 24h
+      attempts: 1,
+      removeOnComplete: { age: 60 * 60 * 24 },
       removeOnFail: { age: 60 * 60 * 24 },
     },
   );
