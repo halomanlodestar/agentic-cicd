@@ -3,13 +3,12 @@
   "type": "module",
   "private": true,
   "workspaces": [
-    "frontend",
-    "worker",
+    "apps/**",
     "packages/**"
   ],
   "scripts": {
-    "web": "bun --cwd frontend dev",
-    "worker": "bun --cwd worker src/index.ts",
+    "web": "bun --cwd apps/frontend dev",
+    "worker": "bun --cwd apps/worker src/index.ts",
     "typecheck": "bun run --filter '*' typecheck"
   },
   "devDependencies": {

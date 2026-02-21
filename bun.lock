@@ -11,7 +11,7 @@
         "typescript": "^5",
       },
     },
-    "frontend": {
+    "apps/frontend": {
       "name": "frontend",
       "version": "0.1.0",
       "dependencies": {
@@ -43,6 +43,28 @@
         "eslint": "^9",
         "eslint-config-next": "16.1.6",
         "tailwindcss": "^4",
+        "typescript": "^5",
+      },
+    },
+    "apps/worker": {
+      "name": "@rift/worker",
+      "version": "0.1.0",
+      "dependencies": {
+        "@rift/docker": "*",
+        "@rift/fixes": "*",
+        "@rift/git": "*",
+        "@rift/llm": "*",
+        "@rift/parser": "*",
+        "@rift/redis": "*",
+        "@rift/scoring": "*",
+        "@rift/types": "*",
+        "bullmq": "^5",
+        "execa": "^9",
+        "ioredis": "^5",
+        "simple-git": "^3",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
         "typescript": "^5",
       },
     },
@@ -143,28 +165,6 @@
       "name": "@rift/types",
       "version": "0.0.1",
       "devDependencies": {
-        "typescript": "^5",
-      },
-    },
-    "worker": {
-      "name": "@rift/worker",
-      "version": "0.1.0",
-      "dependencies": {
-        "@rift/docker": "*",
-        "@rift/fixes": "*",
-        "@rift/git": "*",
-        "@rift/llm": "*",
-        "@rift/parser": "*",
-        "@rift/redis": "*",
-        "@rift/scoring": "*",
-        "@rift/types": "*",
-        "bullmq": "^5",
-        "execa": "^9",
-        "ioredis": "^5",
-        "simple-git": "^3",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
         "typescript": "^5",
       },
     },
@@ -560,7 +560,7 @@
 
     "@rift/types": ["@rift/types@workspace:packages/types"],
 
-    "@rift/worker": ["@rift/worker@workspace:worker"],
+    "@rift/worker": ["@rift/worker@workspace:apps/worker"],
 
     "@rtsao/scc": ["@rtsao/scc@1.1.0", "", {}, "sha512-zt6OdqaDoOnJ1ZYsCYGt9YmWzDXl4vQdKTyJev62gFhRGKdx7mcT54V9KIjg+d2wi9EXsPvAPKe7i7WjfVWB8g=="],
 
@@ -980,7 +980,7 @@
 
     "fresh": ["fresh@2.0.0", "", {}, "sha512-Rx/WycZ60HOaqLKAi6cHRKKI7zxWbJ31MhntmtwMoaTeF7XFH9hhBp8vITaMidfljRQ6eYWCKkaTK+ykVJHP2A=="],
 
-    "frontend": ["frontend@workspace:frontend"],
+    "frontend": ["frontend@workspace:apps/frontend"],
 
     "fs-extra": ["fs-extra@11.3.3", "", { "dependencies": { "graceful-fs": "^4.2.0", "jsonfile": "^6.0.1", "universalify": "^2.0.0" } }, "sha512-VWSRii4t0AFm6ixFFmLLx1t7wS1gh+ckoa84aOeapGum0h+EZd1EhEumSB+ZdDLnEPuucsVB9oB7cxJHap6Afg=="],
 

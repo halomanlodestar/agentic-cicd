@@ -1,8 +1,8 @@
 /** @format */
 
 import { DockerSession } from "@rift/docker";
-import type { PipelineContext } from "../context";
-import { emit } from "../../emit";
+import type { PipelineContext } from "../context.ts";
+import { emit } from "../../emit.ts";
 import { buildPipInstallCmd } from "../pythonEnv.ts";
 
 /**
