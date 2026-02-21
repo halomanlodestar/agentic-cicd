@@ -128,23 +128,6 @@ Our agent is trained to handle the following failures autonomously:
 
 ---
 
-## 📊 Scoring System
-
-The agent provides a final score based on its efficiency:
-
-- **Base:** 100 Points.
-- **Speed Bonus:** +10 Points if the entire run takes < 5 minutes.
-- **Efficiency Penalty:** -2 Points for every commit over the 20-commit threshold.
-
----
-
-## 👥 Team Members
-
-- **[Your Name]** - Lead Engineer / Agent Architecture
-- **[Team Member 2]** - Frontend & Dashboard
-
----
-
 ## ⚠️ Known Limitations
 
 - **Language Support:** Currently supports Python repositories ONLY.
